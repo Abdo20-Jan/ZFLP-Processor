@@ -1,183 +1,345 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
-import DataEntryTab from '../DataEntryTab';
-import CostsTab from '../CostsTab';
-import ResultsTab from '../ResultsTab';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Upload, Plus, Trash2 } from 'lucide-react';
 
 const ProcessorPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [productData, setProductData] = useState([]);
-  const [calculationResults, setCalculationResults] = useState(null);
+  const [activeTab, setActiveTab] = useState('upload');
+  const [products, setProducts] = useState([
+    { id: Date.now(), produto: '', marca: '', quantidade: '', valor: '' }
+  ]);
+  const [costs, setCosts] = useState({
+    fixos: { frete: '', seguro: '', outros: '' },
+    variaveis: { comissao: '', marketing: '', outros: '' },
+    tributos: { iva: '21', ganancias: '35' }
+  });
 
-  const steps = [
-    { id: 1, title: 'Entrada de Dados', description: 'Upload Excel ou entrada manual' },
-    { id: 2, title: 'Custos', description: 'Configurar custos fixos, variáveis e tributos' },
-    { id: 3, title: 'Resultados', description: 'Ver pro-rateio e exportar' }
-  ];
-
-  const handleDataSubmit = (data) => {
-    setProductData(data.data);
-    setCurrentStep(2);
+  const updateProduct = (id, field, value) => {
+    setProducts(prev => prev.map(product => 
+      product.id === id ? { ...product, [field]: value } : product
+    ));
   };
 
-  const handleCalculationComplete = (results) => {
-    setCalculationResults(results);
-    setCurrentStep(3);
+  const addProduct = () => {
+    const newProduct = { 
+      id: Date.now() + Math.random(), 
+      produto: '', 
+      marca: '',
+      quantidade: '', 
+      valor: '' 
+    };
+    setProducts(prev => [...prev, newProduct]);
   };
 
-  const handleExport = async (format) => {
-    try {
-      const response = await fetch(`http://zflp-processor-production.up.railway.app/api/export/${format}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productData,
-          calculationResults
-        })
-      });
+  const removeProduct = (id) => {
+    setProducts(prev => prev.filter(product => product.id !== id));
+  };
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `zflp-rateio.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-      } else {
-        alert('Erro ao exportar arquivo');
-      }
-    } catch (error) {
-      console.error('Erro:', error);
-      alert('Erro de conexão com o servidor');
+  const calculateTotal = () => {
+    return products.reduce((total, product) => {
+      const quantidade = parseFloat(product.quantidade) || 0;
+      const valor = parseFloat(product.valor) || 0;
+      return total + (quantidade * valor);
+    }, 0);
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Implementar upload
+      console.log('Upload file:', file.name);
     }
   };
 
-  const goToStep = (step) => {
-    if (step === 1) {
-      setCurrentStep(1);
-    } else if (step === 2 && productData.length > 0) {
-      setCurrentStep(2);
-    } else if (step === 3 && calculationResults) {
-      setCurrentStep(3);
-    }
+  const renderDataEntry = () => {
+    return (
+      <div className="space-y-6">
+        {/* Abas */}
+        <div className="flex space-x-2">
+          <Button
+            variant={activeTab === 'upload' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('upload')}
+            className="flex items-center space-x-2"
+          >
+            <Upload className="h-4 w-4" />
+            <span>Upload Excel</span>
+          </Button>
+          <Button
+            variant={activeTab === 'manual' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('manual')}
+            className="flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Entrada Manual</span>
+          </Button>
+        </div>
+
+        {/* Conteúdo das Abas */}
+        {activeTab === 'upload' && (
+          <Card>
+            <CardContent className="p-8">
+              <div className="text-center space-y-4">
+                <Upload className="h-16 w-16 mx-auto text-gray-400" />
+                <h3 className="text-lg font-medium">Upload de Planilha Excel</h3>
+                <p className="text-gray-600">Selecione um arquivo .xlsx ou .xls com seus produtos</p>
+                <div>
+                  <Input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label htmlFor="file-upload">
+                    <Button asChild>
+                      <span>Selecionar Arquivo</span>
+                    </Button>
+                  </label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'manual' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Entrada Manual de Produtos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-5 gap-4 font-medium">
+                  <div>Produto</div>
+                  <div>Marca</div>
+                  <div>Quantidade</div>
+                  <div>Valor Fornecedor (USD)</div>
+                  <div>Ações</div>
+                </div>
+                
+                {products.map((product) => (
+                  <div key={product.id} className="grid grid-cols-5 gap-4 items-center">
+                    <Input
+                      placeholder="Nome do produto"
+                      value={product.produto}
+                      onChange={(e) => updateProduct(product.id, 'produto', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Marca"
+                      value={product.marca}
+                      onChange={(e) => updateProduct(product.id, 'marca', e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Qtd"
+                      value={product.quantidade}
+                      onChange={(e) => updateProduct(product.id, 'quantidade', e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={product.valor}
+                      onChange={(e) => updateProduct(product.id, 'valor', e.target.value)}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeProduct(product.id)}
+                      disabled={products.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button onClick={addProduct} variant="outline" className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Produto
+                </Button>
+                
+                <div className="flex justify-between items-center pt-4 border-t">
+                  <div>
+                    Total de produtos: {products.filter(p => p.produto).length} | 
+                    Valor total: ${calculateTotal().toFixed(2)} USD
+                  </div>
+                  <Button onClick={() => setCurrentStep(2)}>
+                    Continuar para Custos
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
+  const renderCosts = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Configuração de Custos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Custos Fixos */}
+            <div>
+              <h3 className="text-lg font-medium mb-3">Custos Fixos</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Frete (USD)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={costs.fixos.frete}
+                    onChange={(e) => setCosts(prev => ({
+                      ...prev,
+                      fixos: { ...prev.fixos, frete: e.target.value }
+                    }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Seguro (USD)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={costs.fixos.seguro}
+                    onChange={(e) => setCosts(prev => ({
+                      ...prev,
+                      fixos: { ...prev.fixos, seguro: e.target.value }
+                    }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Outros (USD)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={costs.fixos.outros}
+                    onChange={(e) => setCosts(prev => ({
+                      ...prev,
+                      fixos: { ...prev.fixos, outros: e.target.value }
+                    }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Tributos Argentinos */}
+            <div>
+              <h3 className="text-lg font-medium mb-3">Tributos Argentinos</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">IVA (%)</label>
+                  <Input
+                    type="number"
+                    value={costs.tributos.iva}
+                    onChange={(e) => setCosts(prev => ({
+                      ...prev,
+                      tributos: { ...prev.tributos, iva: e.target.value }
+                    }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ganancias (%)</label>
+                  <Input
+                    type="number"
+                    value={costs.tributos.ganancias}
+                    onChange={(e) => setCosts(prev => ({
+                      ...prev,
+                      tributos: { ...prev.tributos, ganancias: e.target.value }
+                    }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                Anterior
+              </Button>
+              <Button onClick={() => setCurrentStep(3)}>
+                Ver Resultados
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderResults = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Resultados do Pro-rateio</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p>Cálculos em desenvolvimento...</p>
+            <Button variant="outline" onClick={() => setCurrentStep(2)}>
+              Voltar para Custos
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Cabeçalho */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            ZFLP Processor - Argentina
-          </h1>
-          <p className="text-gray-600">
-            Sistema de pro-rateio de custos para importação - Valores em USD
-          </p>
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              ZFLP Processor - Argentina
+            </h1>
+            <p className="text-gray-600">
+              Sistema de pro-rateio de custos para importação - Valores em USD
+            </p>
+          </div>
 
-        {/* Indicador de Progresso */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center space-x-8">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div
-                  className={`flex items-center cursor-pointer ${
-                    currentStep >= step.id ? 'text-blue-600' : 'text-gray-400'
-                  }`}
-                  onClick={() => goToStep(step.id)}
-                >
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                      currentStep > step.id
-                        ? 'bg-green-500 border-green-500 text-white'
-                        : currentStep === step.id
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'border-gray-300 text-gray-400'
-                    }`}
-                  >
-                    {currentStep > step.id ? (
-                      <CheckCircle className="w-6 h-6" />
-                    ) : (
-                      step.id
-                    )}
-                  </div>
-                  <div className="ml-3 text-left">
-                    <div className="font-medium">{step.title}</div>
-                    <div className="text-sm text-gray-500">{step.description}</div>
-                  </div>
+          {/* Steps */}
+          <div className="flex justify-center mb-8">
+            <div className="flex items-center space-x-8">
+              <div className={`flex items-center space-x-2 ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+                  1
                 </div>
-                {index < steps.length - 1 && (
-                  <ArrowRight className="w-5 h-5 text-gray-400 mx-4" />
-                )}
+                <span>Entrada de Dados</span>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Conteúdo Principal */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          {currentStep === 1 && (
-            <DataEntryTab onDataSubmit={handleDataSubmit} />
-          )}
-          
-          {currentStep === 2 && (
-            <CostsTab 
-              productData={productData}
-              onCalculationComplete={handleCalculationComplete}
-            />
-          )}
-          
-          {currentStep === 3 && (
-            <ResultsTab 
-              calculationResults={calculationResults}
-              onExport={handleExport}
-            />
-          )}
-        </div>
-
-        {/* Navegação */}
-        <div className="flex justify-between mt-6">
-          <button
-            onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-            disabled={currentStep === 1}
-            className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Anterior
-          </button>
-
-          <div className="text-sm text-gray-500 flex items-center">
-            Etapa {currentStep} de {steps.length}
+              <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+                  2
+                </div>
+                <span>Custos</span>
+              </div>
+              <div className={`flex items-center space-x-2 ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+                  3
+                </div>
+                <span>Resultados</span>
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={() => {
-              if (currentStep === 1 && productData.length > 0) {
-                setCurrentStep(2);
-              } else if (currentStep === 2 && calculationResults) {
-                setCurrentStep(3);
-              }
-            }}
-            disabled={
-              (currentStep === 1 && productData.length === 0) ||
-              (currentStep === 2 && !calculationResults) ||
-              currentStep === 3
-            }
-            className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Próximo
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </button>
-        </div>
+          {/* Content */}
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="p-6">
+              {currentStep === 1 && renderDataEntry()}
+              {currentStep === 2 && renderCosts()}
+              {currentStep === 3 && renderResults()}
+            </div>
+          </div>
 
-        {/* Informações da Sessão */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <div className="flex justify-center space-x-6">
+          {/* Footer */}
+          <div className="flex justify-center mt-8 space-x-6 text-sm text-gray-500">
             <span>🇦🇷 Argentina</span>
             <span>💰 USD Exclusivo</span>
             <span>📊 Pro-rateio Automático</span>
@@ -190,4 +352,3 @@ const ProcessorPage = () => {
 };
 
 export default ProcessorPage;
-
