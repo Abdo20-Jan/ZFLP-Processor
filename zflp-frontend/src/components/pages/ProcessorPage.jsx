@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Upload, Plus, Trash2, Save, Download, AlertTriangle, Info, Search, CheckSquare, Square, BarChart3, FileText, Calculator } from 'lucide-react';
+import { Upload, Plus, Trash2, Save, Download, AlertTriangle, Info, Search, CheckSquare, Square, BarChart3, FileText, Calculator, DollarSign, Percent } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 // Base de dados real dos produtos (será carregada do backend)
@@ -11,7 +11,7 @@ const REAL_DATABASE = {
   marcas: ['LINGLONG', 'XBRI', 'ADERENZA', 'SUNSET', 'GOODRIDE', 'DURATURN', 'DURABLE']
 };
 
-// Custos fixos específicos conforme PDF
+// Custos fixos específicos conforme especificações
 const CUSTOS_FIXOS_ESPECIFICOS = [
   { id: 'precinto', nome: 'Precinto Electronico', tipo: 'fixo', valor: '', incluir: false },
   { id: 'porto_asu', nome: 'Servicios de Porto ASU/container o carreta FOB', tipo: 'fixo', valor: '', incluir: false },
@@ -208,6 +208,51 @@ const ProcessorPage = () => {
 
   const removeProduct = useCallback(id => {
     setProducts(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  // --- Funções de Manipulação de Custos ---
+  const updateCostField = useCallback((category, id, field, value) => {
+    setCosts(prevCosts => {
+      const newCosts = { ...prevCosts };
+      
+      if (category === 'frete') {
+        newCosts.freteInternacional[field] = value;
+      } else if (category === 'seguro') {
+        newCosts.seguroInternacional[field] = value;
+      } else if (category === 'custosFixos') {
+        newCosts.custosFixos = newCosts.custosFixos.map(c => 
+          c.id === id ? { ...c, [field]: value } : c
+        );
+      } else if (category === 'custosVariaveis') {
+        newCosts.custosVariaveis = newCosts.custosVariaveis.map(c => 
+          c.id === id ? { ...c, [field]: value } : c
+        );
+      }
+      
+      return newCosts;
+    });
+  }, []);
+
+  const addCustomCost = useCallback((category) => {
+    const newCost = {
+      id: Date.now() + Math.random(),
+      nome: '',
+      tipo: 'fixo',
+      valor: '',
+      incluir: false
+    };
+
+    setCosts(prevCosts => ({
+      ...prevCosts,
+      [category]: [...prevCosts[category], newCost]
+    }));
+  }, []);
+
+  const removeCustomCost = useCallback((category, id) => {
+    setCosts(prevCosts => ({
+      ...prevCosts,
+      [category]: prevCosts[category].filter(c => c.id !== id)
+    }));
   }, []);
 
   // --- Upload de Excel CORRIGIDO PARA FUNCIONAR NA NUVEM ---
@@ -471,6 +516,44 @@ const ProcessorPage = () => {
     return totalFOB + frete + seguro;
   }, [costs, calcularSomaTotalFOB, normalizeDecimal]);
 
+  const calcularTotalCustosFixos = useCallback(() => {
+    const totalFOB = calcularSomaTotalFOB();
+    const totalCIF = calcularCIF();
+    
+    return costs.custosFixos.reduce((total, custo) => {
+      if (!custo.incluir) return total;
+      
+      const valor = parseFloat(normalizeDecimal(custo.valor)) || 0;
+      
+      if (custo.tipo === 'percent_fob') {
+        return total + (totalFOB * valor / 100);
+      } else if (custo.tipo === 'percent_cif') {
+        return total + (totalCIF * valor / 100);
+      } else {
+        return total + valor;
+      }
+    }, 0);
+  }, [costs.custosFixos, calcularSomaTotalFOB, calcularCIF, normalizeDecimal]);
+
+  const calcularTotalCustosVariaveis = useCallback(() => {
+    const totalFOB = calcularSomaTotalFOB();
+    const totalCIF = calcularCIF();
+    
+    return costs.custosVariaveis.reduce((total, custo) => {
+      if (!custo.incluir) return total;
+      
+      const valor = parseFloat(normalizeDecimal(custo.valor)) || 0;
+      
+      if (custo.tipo === 'percent_fob') {
+        return total + (totalFOB * valor / 100);
+      } else if (custo.tipo === 'percent_cif') {
+        return total + (totalCIF * valor / 100);
+      } else {
+        return total + valor;
+      }
+    }, 0);
+  }, [costs.custosVariaveis, calcularSomaTotalFOB, calcularCIF, normalizeDecimal]);
+
   // --- Funções de Navegação ---
   const goToNextStep = () => setCurrentStep(prev => Math.min(prev + 1, 8));
   const goToPrevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
@@ -655,6 +738,341 @@ const ProcessorPage = () => {
     </Card>
   );
 
+  const renderCostsStep = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center">
+          <Calculator className="w-6 h-6 mr-2" />
+          Etapa 2: Custos p/ Nasser Cubiertas na ZFLP
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-8">
+        {/* Resumo dos Produtos */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="font-medium text-blue-900 mb-2">Resumo dos Produtos</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="text-blue-700">Total FOB:</span>
+              <span className="font-medium ml-2">${calcularSomaTotalFOB().toFixed(2)} USD</span>
+            </div>
+            <div>
+              <span className="text-blue-700">Total CIF:</span>
+              <span className="font-medium ml-2">${calcularCIF().toFixed(2)} USD</span>
+            </div>
+            <div>
+              <span className="text-blue-700">Produtos:</span>
+              <span className="font-medium ml-2">{products.length} itens</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2.1 Frete + Seguro */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+            <DollarSign className="w-5 h-5 mr-2" />
+            2.1 Frete + Seguro
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Frete Internacional */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Frete Internacional
+              </label>
+              <div className="flex space-x-2">
+                <select
+                  value={costs.freteInternacional.tipo}
+                  onChange={e => updateCostField('frete', null, 'tipo', e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="fixo">Valor Fixo (USD)</option>
+                  <option value="percent_fob">% sobre FOB</option>
+                </select>
+                <Input
+                  type="text"
+                  placeholder={costs.freteInternacional.tipo === 'fixo' ? '0,00' : '0,00%'}
+                  value={costs.freteInternacional.valor}
+                  onChange={e => updateCostField('frete', null, 'valor', e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              {costs.freteInternacional.valor && (
+                <p className="text-xs text-gray-500">
+                  Valor calculado: ${
+                    costs.freteInternacional.tipo === 'fixo' 
+                      ? (parseFloat(normalizeDecimal(costs.freteInternacional.valor)) || 0).toFixed(2)
+                      : ((calcularSomaTotalFOB() * (parseFloat(normalizeDecimal(costs.freteInternacional.valor)) || 0)) / 100).toFixed(2)
+                  } USD
+                </p>
+              )}
+            </div>
+
+            {/* Seguro Internacional - SEMPRE % FOB */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Seguro Internacional (sempre % sobre FOB)
+              </label>
+              <div className="flex space-x-2">
+                <div className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-100 text-gray-600">
+                  % sobre FOB
+                </div>
+                <Input
+                  type="text"
+                  placeholder="0,50%"
+                  value={costs.seguroInternacional.valor}
+                  onChange={e => updateCostField('seguro', null, 'valor', e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              {costs.seguroInternacional.valor && (
+                <p className="text-xs text-gray-500">
+                  Valor calculado: ${((calcularSomaTotalFOB() * (parseFloat(normalizeDecimal(costs.seguroInternacional.valor)) || 0)) / 100).toFixed(2)} USD
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 2.2 Custos Fixos Específicos */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+            <CheckSquare className="w-5 h-5 mr-2" />
+            2.2 Custos Fixos Específicos
+          </h3>
+          
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Marque os custos que devem ser considerados no pro-rateio:
+            </p>
+            
+            <div className="space-y-3">
+              {costs.custosFixos.map((custo, index) => (
+                <div key={custo.id} className="flex items-center space-x-3 p-3 bg-white rounded-md border">
+                  <button
+                    onClick={() => updateCostField('custosFixos', custo.id, 'incluir', !custo.incluir)}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                      custo.incluir ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                    }`}
+                  >
+                    {custo.incluir && <CheckSquare className="w-3 h-3 text-white" />}
+                  </button>
+                  
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-900">{custo.nome}</span>
+                    {custo.tipo === 'percent_cif' && (
+                      <span className="ml-2 text-xs text-blue-600">({custo.valor}% s/ CIF)</span>
+                    )}
+                    {custo.tipo === 'percent_fob' && (
+                      <span className="ml-2 text-xs text-green-600">({custo.valor}% s/ FOB)</span>
+                    )}
+                  </div>
+                  
+                  {custo.incluir && (custo.tipo === 'fixo' || !custo.valor) && (
+                    <Input
+                      type="text"
+                      placeholder="Valor USD"
+                      value={custo.valor}
+                      onChange={e => updateCostField('custosFixos', custo.id, 'valor', e.target.value)}
+                      className="w-32 text-sm"
+                    />
+                  )}
+                  
+                  {custo.incluir && custo.valor && (
+                    <span className="text-sm font-medium text-gray-700 w-24 text-right">
+                      ${
+                        custo.tipo === 'percent_fob' 
+                          ? ((calcularSomaTotalFOB() * (parseFloat(normalizeDecimal(custo.valor)) || 0)) / 100).toFixed(2)
+                          : custo.tipo === 'percent_cif'
+                          ? ((calcularCIF() * (parseFloat(normalizeDecimal(custo.valor)) || 0)) / 100).toFixed(2)
+                          : (parseFloat(normalizeDecimal(custo.valor)) || 0).toFixed(2)
+                      }
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4 pt-3 border-t flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700">Total Custos Fixos:</span>
+              <span className="text-lg font-bold text-blue-600">
+                ${calcularTotalCustosFixos().toFixed(2)} USD
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2.3 Custos Variáveis */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+            <Plus className="w-5 h-5 mr-2" />
+            2.3 Custos Variáveis
+          </h3>
+          
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            {costs.custosVariaveis.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 mb-4">Nenhum custo variável adicionado</p>
+                <Button
+                  onClick={() => addCustomCost('custosVariaveis')}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Adicionar Custo Variável
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {costs.custosVariaveis.map((custo, index) => (
+                  <div key={custo.id} className="flex items-center space-x-3 p-3 bg-white rounded-md border">
+                    <button
+                      onClick={() => updateCostField('custosVariaveis', custo.id, 'incluir', !custo.incluir)}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        custo.incluir ? 'bg-blue-600 border-blue-600' : 'border-gray-300'
+                      }`}
+                    >
+                      {custo.incluir && <CheckSquare className="w-3 h-3 text-white" />}
+                    </button>
+                    
+                    <Input
+                      placeholder="Nome do custo"
+                      value={custo.nome}
+                      onChange={e => updateCostField('custosVariaveis', custo.id, 'nome', e.target.value)}
+                      className="flex-1 text-sm"
+                    />
+                    
+                    <select
+                      value={custo.tipo}
+                      onChange={e => updateCostField('custosVariaveis', custo.id, 'tipo', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="fixo">Valor Fixo (USD)</option>
+                      <option value="percent_fob">% sobre FOB</option>
+                      <option value="percent_cif">% sobre CIF</option>
+                    </select>
+                    
+                    <Input
+                      type="text"
+                      placeholder={custo.tipo === 'fixo' ? 'USD' : '%'}
+                      value={custo.valor}
+                      onChange={e => updateCostField('custosVariaveis', custo.id, 'valor', e.target.value)}
+                      className="w-24 text-sm"
+                    />
+                    
+                    {custo.incluir && custo.valor && (
+                      <span className="text-sm font-medium text-gray-700 w-20 text-right">
+                        ${
+                          custo.tipo === 'percent_fob' 
+                            ? ((calcularSomaTotalFOB() * (parseFloat(normalizeDecimal(custo.valor)) || 0)) / 100).toFixed(2)
+                            : custo.tipo === 'percent_cif'
+                            ? ((calcularCIF() * (parseFloat(normalizeDecimal(custo.valor)) || 0)) / 100).toFixed(2)
+                            : (parseFloat(normalizeDecimal(custo.valor)) || 0).toFixed(2)
+                        }
+                      </span>
+                    )}
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeCustomCost('custosVariaveis', custo.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button
+                  onClick={() => addCustomCost('custosVariaveis')}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-2" /> Adicionar Outro Custo Variável
+                </Button>
+                
+                <div className="mt-4 pt-3 border-t flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Total Custos Variáveis:</span>
+                  <span className="text-lg font-bold text-green-600">
+                    ${calcularTotalCustosVariaveis().toFixed(2)} USD
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Resumo Total */}
+        <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Resumo Total dos Custos ZFLP</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Total FOB:</span>
+                <span className="font-medium">${calcularSomaTotalFOB().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Frete:</span>
+                <span className="font-medium">
+                  ${
+                    costs.freteInternacional.tipo === 'fixo' 
+                      ? (parseFloat(normalizeDecimal(costs.freteInternacional.valor)) || 0).toFixed(2)
+                      : ((calcularSomaTotalFOB() * (parseFloat(normalizeDecimal(costs.freteInternacional.valor)) || 0)) / 100).toFixed(2)
+                  }
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Seguro:</span>
+                <span className="font-medium">
+                  ${((calcularSomaTotalFOB() * (parseFloat(normalizeDecimal(costs.seguroInternacional.valor)) || 0)) / 100).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="text-sm font-medium text-gray-700">Total CIF:</span>
+                <span className="font-bold">${calcularCIF().toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Custos Fixos:</span>
+                <span className="font-medium">${calcularTotalCustosFixos().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Custos Variáveis:</span>
+                <span className="font-medium">${calcularTotalCustosVariaveis().toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="text-sm font-medium text-gray-700">Total Custos ZFLP:</span>
+                <span className="font-bold text-blue-600">
+                  ${(calcularTotalCustosFixos() + calcularTotalCustosVariaveis()).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <span className="font-bold text-gray-800">TOTAL GERAL:</span>
+                <span className="font-bold text-lg text-green-600">
+                  ${(calcularCIF() + calcularTotalCustosFixos() + calcularTotalCustosVariaveis()).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navegação */}
+        <div className="flex justify-between items-center pt-6 border-t">
+          <Button onClick={goToPrevStep} variant="outline">
+            Voltar para Produtos
+          </Button>
+          <Button 
+            onClick={goToNextStep}
+            disabled={calcularSomaTotalFOB() === 0}
+          >
+            Continuar para Pro-rateio <BarChart3 className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // Renderização principal
   return (
     <div className="min-h-screen bg-gray-100 p-4 lg:p-8">
@@ -702,7 +1120,7 @@ const ProcessorPage = () => {
 
         {/* Conteúdo da Etapa Atual */}
         {currentStep === 1 && renderDataEntryStep()}
-        {currentStep === 2 && <Card><CardHeader><CardTitle>Etapa 2: Custos ZFLP</CardTitle></CardHeader><CardContent><p>Em desenvolvimento...</p><Button onClick={goToPrevStep} variant="outline" className="mr-2">Anterior</Button><Button onClick={goToNextStep}>Próximo</Button></CardContent></Card>}
+        {currentStep === 2 && renderCostsStep()}
         {currentStep === 3 && <Card><CardHeader><CardTitle>Etapa 3: Relatório Pro-rateio</CardTitle></CardHeader><CardContent><p>Em desenvolvimento...</p><Button onClick={goToPrevStep} variant="outline" className="mr-2">Anterior</Button><Button onClick={goToNextStep}>Próximo</Button></CardContent></Card>}
         {currentStep === 4 && <Card><CardHeader><CardTitle>Etapa 4: Margem por Produto</CardTitle></CardHeader><CardContent><p>Em desenvolvimento...</p><Button onClick={goToPrevStep} variant="outline" className="mr-2">Anterior</Button><Button onClick={goToNextStep}>Próximo</Button></CardContent></Card>}
         {currentStep === 5 && <Card><CardHeader><CardTitle>Etapa 5: Invoice Cliente</CardTitle></CardHeader><CardContent><p>Em desenvolvimento...</p><Button onClick={goToPrevStep} variant="outline" className="mr-2">Anterior</Button><Button onClick={goToNextStep}>Próximo</Button></CardContent></Card>}
