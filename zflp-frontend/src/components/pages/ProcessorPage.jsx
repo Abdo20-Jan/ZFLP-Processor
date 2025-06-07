@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Upload, Plus, Trash2, Save, Download, AlertTriangle, Info, Search, CheckSquare, Square, BarChart3, FileText, Calculator } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 // Base de dados real dos produtos (será carregada do backend)
 const REAL_DATABASE = {
@@ -227,8 +228,7 @@ const ProcessorPage = () => {
         try {
           const data = new Uint8Array(e.target.result);
           
-          // Importar XLSX dinamicamente
-          const XLSX = await import('xlsx');
+          // XLSX já importado no topo do arquivo
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
