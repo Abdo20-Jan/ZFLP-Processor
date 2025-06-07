@@ -7,8 +7,7 @@ import { Upload, Plus, Trash2, Save, Download, AlertTriangle, Info, Search, Chec
 // Base de dados real dos produtos (será carregada do backend)
 const REAL_DATABASE = {
   produtos: [], // Será preenchido via API
-  marcas: ['LINGLONG', 'XBRI', 'ADERENZA', 'SUNSET', 'GOODRIDE', 'DURATURN', 'DURABLE'],
-  aplicacoes: ['PCR', 'UHP', 'SUV', 'LTR', 'TBR', 'TBB', 'AGR', 'AGRI-RADIAL', 'OTR', 'IND']
+  marcas: ['LINGLONG', 'XBRI', 'ADERENZA', 'SUNSET', 'GOODRIDE', 'DURATURN', 'DURABLE']
 };
 
 // Custos fixos específicos conforme PDF
@@ -37,13 +36,12 @@ const ProcessorPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState('upload');
 
-  // Estado para produtos
+  // Estado para produtos (SEM APLICAÇÃO)
   const [products, setProducts] = useState([
     {
       id: Date.now(),
       item: '',
       marca: '',
-      aplicacao: '',
       quantidade: '',
       valorFOB: '',
       totalFOB: 0,
@@ -121,14 +119,22 @@ const ProcessorPage = () => {
     if (searchTerm.length >= 2) {
       const filtered = databaseProducts.filter(p => 
         p.Item?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.Marca?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.Aplicación?.toLowerCase().includes(searchTerm.toLowerCase())
+        p.Marca?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredProducts(filtered.slice(0, 10)); // Limitar a 10 resultados
     } else {
       setFilteredProducts([]);
     }
   }, [searchTerm, databaseProducts]);
+
+  // Função para normalizar valores decimais (vírgula para ponto)
+  const normalizeDecimal = useCallback((value) => {
+    if (typeof value === 'string') {
+      // Substituir vírgula por ponto para valores decimais
+      return value.replace(',', '.');
+    }
+    return value;
+  }, []);
 
   // --- Funções de Manipulação de Produtos ---
   const updateProductField = useCallback((id, field, value) => {
@@ -139,8 +145,8 @@ const ProcessorPage = () => {
           
           // Recalcular Total FOB se quantidade ou valorFOB mudar
           if (field === 'quantidade' || field === 'valorFOB') {
-            const qty = parseFloat(updatedProduct.quantidade) || 0;
-            const fob = parseFloat(updatedProduct.valorFOB) || 0;
+            const qty = parseFloat(normalizeDecimal(updatedProduct.quantidade)) || 0;
+            const fob = parseFloat(normalizeDecimal(updatedProduct.valorFOB)) || 0;
             updatedProduct.totalFOB = qty * fob;
           }
           
@@ -154,7 +160,7 @@ const ProcessorPage = () => {
         return p;
       })
     );
-  }, []);
+  }, [normalizeDecimal]);
 
   const selectProductFromDatabase = useCallback((productId, dbProduct) => {
     setProducts(prevProducts =>
@@ -164,11 +170,10 @@ const ProcessorPage = () => {
             ...p,
             item: dbProduct.Item || '',
             marca: dbProduct.Marca || '',
-            aplicacao: dbProduct.Aplicación || '',
             valorFOB: String(dbProduct['FCA '] || ''),
             pesoUnit: dbProduct['Peso Unit'] || 0,
             m3Unit: dbProduct.M3 || 0,
-            totalFOB: (parseFloat(p.quantidade) || 0) * (parseFloat(dbProduct['FCA ']) || 0)
+            totalFOB: (parseFloat(normalizeDecimal(p.quantidade)) || 0) * (parseFloat(normalizeDecimal(dbProduct['FCA '])) || 0)
           };
         }
         return p;
@@ -176,7 +181,7 @@ const ProcessorPage = () => {
     );
     setFilteredProducts([]);
     setSearchTerm('');
-  }, []);
+  }, [normalizeDecimal]);
 
   const addNewProduct = useCallback(() => {
     setProducts(prev => [
@@ -185,7 +190,6 @@ const ProcessorPage = () => {
         id: Date.now() + Math.random(),
         item: '',
         marca: '',
-        aplicacao: '',
         quantidade: '',
         valorFOB: '',
         totalFOB: 0,
@@ -205,7 +209,7 @@ const ProcessorPage = () => {
     setProducts(prev => prev.filter(p => p.id !== id));
   }, []);
 
-  // --- Upload de Excel CORRIGIDO ---
+  // --- Upload de Excel CORRIGIDO PARA FUNCIONAR NA NUVEM ---
   const handleFileUpload = async event => {
     const file = event.target.files[0];
     if (!file) {
@@ -215,51 +219,104 @@ const ProcessorPage = () => {
     setUploadedFile(file);
     setProcessingError('');
 
-    const formData = new FormData();
-    formData.append('file', file);
-
+    // PROCESSAMENTO LOCAL EM VEZ DE BACKEND (para funcionar na nuvem)
     try {
-      const response = await fetch('https://zflp-processor-production.up.railway.app/api/upload', {
-        method: 'POST',
-        body: formData
-      });
+      // Usar FileReader para processar localmente
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          
+          // Importar XLSX dinamicamente
+          const XLSX = await import('xlsx');
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.products && result.products.length > 0) {
-          const parsedProducts = result.products.map((p, i) => ({
-            id: Date.now() + i + Math.random(),
-            item: p.item || p.produto || p.Item || '',
-            marca: p.marca || p.Marca || '',
-            aplicacao: p.aplicacao || p.Aplicación || '',
-            quantidade: String(p.quantidade || p.quantity || ''),
-            valorFOB: String(p.valorFOB || p.valor || p.value || p['FCA '] || ''),
-            totalFOB: (parseFloat(p.quantidade || p.quantity || 0) * parseFloat(p.valorFOB || p.valor || p.value || p['FCA '] || 0)),
-            pesoUnit: p.pesoUnit || p['Peso Unit'] || 0,
-            m3Unit: p.m3Unit || p.M3 || 0,
-            custoProRateado: 0,
-            custoFinalUnitario: 0,
-            custoFinalTotal: 0,
-            margemDesejada: 0,
-            precoVendaUnitario: 0,
-            precoVendaTotal: 0
-          }));
+          if (jsonData.length < 2) {
+            setProcessingError('Planilha vazia ou sem dados válidos.');
+            return;
+          }
+
+          // Processar dados do Excel
+          const header = jsonData[0].map(h => String(h).trim().toLowerCase());
+          console.log('Cabeçalho encontrado:', header);
+
+          // Encontrar índices das colunas
+          const itemIndex = header.findIndex(h => h.includes('item') || h.includes('produto'));
+          const marcaIndex = header.findIndex(h => h.includes('marca'));
+          const quantidadeIndex = header.findIndex(h => h.includes('quantidade') || h.includes('qtd'));
+          const valorIndex = header.findIndex(h => h.includes('valor') || h.includes('fob') || h.includes('preço') || h.includes('preco'));
+
+          console.log('Índices encontrados:', { itemIndex, marcaIndex, quantidadeIndex, valorIndex });
+
+          if (itemIndex === -1 || quantidadeIndex === -1 || valorIndex === -1) {
+            setProcessingError('Colunas obrigatórias não encontradas. Necessário: Item, Quantidade, Valor FOB');
+            return;
+          }
+
+          const parsedProducts = jsonData.slice(1).map((row, i) => {
+            const item = String(row[itemIndex] || '').trim();
+            const marca = marcaIndex > -1 ? String(row[marcaIndex] || '').trim() : '';
+            const quantidadeRaw = String(row[quantidadeIndex] || '0').trim();
+            const valorRaw = String(row[valorIndex] || '0').trim();
+
+            // Normalizar valores decimais (vírgula para ponto)
+            const quantidade = parseFloat(normalizeDecimal(quantidadeRaw));
+            const valorFOB = parseFloat(normalizeDecimal(valorRaw));
+
+            if (!item || isNaN(quantidade) || isNaN(valorFOB)) {
+              console.warn(`Linha ${i + 2} ignorada por dados inválidos:`, row);
+              return null;
+            }
+
+            return {
+              id: Date.now() + i + Math.random(),
+              item,
+              marca,
+              quantidade: String(quantidade),
+              valorFOB: String(valorFOB),
+              totalFOB: quantidade * valorFOB,
+              pesoUnit: 0,
+              m3Unit: 0,
+              custoProRateado: 0,
+              custoFinalUnitario: 0,
+              custoFinalTotal: 0,
+              margemDesejada: 0,
+              precoVendaUnitario: 0,
+              precoVendaTotal: 0
+            };
+          }).filter(p => p !== null);
+
+          if (parsedProducts.length === 0) {
+            setProcessingError('Nenhum produto válido encontrado na planilha.');
+            return;
+          }
+
           setProducts(parsedProducts);
           setProcessingError('');
-        } else {
-          setProcessingError('Nenhum produto válido encontrado no arquivo.');
+          console.log('Produtos importados com sucesso:', parsedProducts);
+
+        } catch (error) {
+          console.error('Erro ao processar Excel:', error);
+          setProcessingError(`Erro ao processar arquivo: ${error.message}`);
         }
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        setProcessingError(errorData.error || 'Erro ao processar arquivo. Verifique o formato (.xlsx, .xls).');
-      }
+      };
+
+      reader.onerror = () => {
+        setProcessingError('Erro ao ler o arquivo.');
+      };
+
+      reader.readAsArrayBuffer(file);
+
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
-      setProcessingError(`Erro de conexão: ${error.message}. Verifique se o backend está funcionando.`);
+      setProcessingError(`Erro: ${error.message}`);
     }
   };
 
-  // --- Copy/Paste DEFINITIVAMENTE CORRIGIDO ---
+  // --- Copy/Paste CORRIGIDO PARA VÍRGULAS DECIMAIS ---
   const handlePaste = useCallback((e, firstProductId, fieldName) => {
     if (fieldName !== 'item') return;
 
@@ -293,18 +350,18 @@ const ProcessorPage = () => {
 
       const item = columns[0] || '';
       let marca = '';
-      let aplicacao = '';
       let quantidade = '';
       let valorFOB = '';
 
-      // Identificar colunas numéricas
+      // Identificar colunas numéricas (com suporte a vírgula decimal)
       const numericalColumns = [];
       for (let i = 1; i < columns.length; i++) {
-        const cleanValue = columns[i].replace(/[$,\s]/g, '');
-        if (!isNaN(parseFloat(cleanValue)) && isFinite(cleanValue)) {
+        const cleanValue = columns[i].replace(/[$\s]/g, ''); // Remove $ e espaços
+        const normalizedValue = normalizeDecimal(cleanValue); // Converte vírgula para ponto
+        if (!isNaN(parseFloat(normalizedValue)) && isFinite(normalizedValue)) {
           numericalColumns.push({
             index: i,
-            value: cleanValue,
+            value: normalizedValue,
             original: columns[i]
           });
         }
@@ -317,25 +374,22 @@ const ProcessorPage = () => {
         quantidade = numericalColumns[numericalColumns.length - 2].value;
         valorFOB = numericalColumns[numericalColumns.length - 1].value;
         
-        // Colunas entre item e quantidade são marca/aplicação
+        // Colunas entre item e quantidade são marca
         const textColumns = columns.slice(1, numericalColumns[numericalColumns.length - 2].index);
         marca = textColumns[0] || '';
-        aplicacao = textColumns[1] || '';
       } else if (numericalColumns.length === 1) {
         // Apenas uma coluna numérica = valor FOB
         valorFOB = numericalColumns[0].value;
         quantidade = '1';
         
-        // Colunas entre item e valor são marca/aplicação
+        // Colunas entre item e valor são marca
         const textColumns = columns.slice(1, numericalColumns[0].index);
         marca = textColumns[0] || '';
-        aplicacao = textColumns[1] || '';
       } else {
         // Sem colunas numéricas, usar posições fixas
         marca = columns[1] || '';
-        aplicacao = columns[2] || '';
-        quantidade = columns[3] || '1';
-        valorFOB = columns[4] || '0';
+        quantidade = normalizeDecimal(columns[2] || '1');
+        valorFOB = normalizeDecimal(columns[3] || '0');
       }
 
       const qtyNum = parseFloat(quantidade) || 1;
@@ -344,7 +398,6 @@ const ProcessorPage = () => {
       console.log(`Produto ${index + 1} final:`, {
         item,
         marca,
-        aplicacao,
         quantidade: qtyNum,
         valorFOB: fobNum,
         totalFOB: qtyNum * fobNum
@@ -354,7 +407,6 @@ const ProcessorPage = () => {
         id: Date.now() + index + Math.random(),
         item,
         marca,
-        aplicacao,
         quantidade: String(qtyNum),
         valorFOB: String(fobNum),
         totalFOB: qtyNum * fobNum,
@@ -403,7 +455,7 @@ const ProcessorPage = () => {
       }
     });
 
-  }, []);
+  }, [normalizeDecimal]);
 
   // --- Funções de Cálculo ---
   const calcularSomaTotalFOB = useCallback(() => {
@@ -413,11 +465,11 @@ const ProcessorPage = () => {
   const calcularCIF = useCallback(() => {
     const totalFOB = calcularSomaTotalFOB();
     const frete = costs.freteInternacional.tipo === 'fixo' 
-      ? parseFloat(costs.freteInternacional.valor) || 0
-      : (totalFOB * (parseFloat(costs.freteInternacional.valor) || 0)) / 100;
-    const seguro = (totalFOB * (parseFloat(costs.seguroInternacional.valor) || 0)) / 100;
+      ? parseFloat(normalizeDecimal(costs.freteInternacional.valor)) || 0
+      : (totalFOB * (parseFloat(normalizeDecimal(costs.freteInternacional.valor)) || 0)) / 100;
+    const seguro = (totalFOB * (parseFloat(normalizeDecimal(costs.seguroInternacional.valor)) || 0)) / 100;
     return totalFOB + frete + seguro;
-  }, [costs, calcularSomaTotalFOB]);
+  }, [costs, calcularSomaTotalFOB, normalizeDecimal]);
 
   // --- Funções de Navegação ---
   const goToNextStep = () => setCurrentStep(prev => Math.min(prev + 1, 8));
@@ -457,7 +509,7 @@ const ProcessorPage = () => {
               Upload de Planilha Excel (.xlsx, .xls)
             </h3>
             <p className="text-sm text-gray-600">
-              Formato: Item, Marca, Quantidade, Valor FOB
+              Formato: Item, Marca, Quantidade, Valor FOB (aceita vírgulas decimais)
             </p>
             <Input
               type="file"
@@ -491,18 +543,18 @@ const ProcessorPage = () => {
               <p className="text-xs text-blue-700 flex items-start">
                 <Info size={16} className="mr-2 flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Autocomplete:</strong> Digite 2+ caracteres no campo Item para buscar na base de dados (498 produtos).
+                  <strong>Autocomplete:</strong> Digite 2+ caracteres no campo Item para buscar na base de dados.
                   <br />
-                  <strong>Copy/Paste:</strong> Cole múltiplas linhas (Item, Marca, Quantidade, Valor FOB) no primeiro campo Item.
+                  <strong>Copy/Paste:</strong> Cole múltiplas linhas (Item, Marca, Quantidade, Valor FOB) no primeiro campo Item. 
+                  <strong>Suporte a vírgulas decimais!</strong>
                 </span>
               </p>
             </div>
 
-            {/* Cabeçalho da Tabela */}
-            <div className="hidden lg:grid grid-cols-[minmax(250px,3fr)_repeat(4,minmax(120px,1fr))_minmax(60px,auto)] gap-2 pb-2 border-b font-medium text-sm text-gray-600">
+            {/* Cabeçalho da Tabela (SEM APLICAÇÃO) */}
+            <div className="hidden lg:grid grid-cols-[minmax(250px,3fr)_repeat(3,minmax(120px,1fr))_minmax(60px,auto)] gap-2 pb-2 border-b font-medium text-sm text-gray-600">
               <div>Item</div>
               <div>Marca</div>
-              <div>Aplicação</div>
               <div>Quantidade</div>
               <div>Valor FOB (USD)</div>
               <div>Ações</div>
@@ -511,7 +563,7 @@ const ProcessorPage = () => {
             {products.map((p, index) => (
               <div
                 key={p.id}
-                className="grid grid-cols-1 lg:grid-cols-[minmax(250px,3fr)_repeat(4,minmax(120px,1fr))_minmax(60px,auto)] gap-2 items-start py-2 border-b lg:border-none relative"
+                className="grid grid-cols-1 lg:grid-cols-[minmax(250px,3fr)_repeat(3,minmax(120px,1fr))_minmax(60px,auto)] gap-2 items-start py-2 border-b lg:border-none relative"
               >
                 {/* Campo Item com Autocomplete */}
                 <div className="relative">
@@ -535,7 +587,7 @@ const ProcessorPage = () => {
                         >
                           <div className="font-medium">{dbProduct.Item}</div>
                           <div className="text-xs text-gray-500">
-                            {dbProduct.Marca} | {dbProduct.Aplicación} | ${dbProduct['FCA '] || 'N/A'}
+                            {dbProduct.Marca} | ${dbProduct['FCA '] || 'N/A'}
                           </div>
                         </div>
                       ))}
@@ -551,18 +603,10 @@ const ProcessorPage = () => {
                   className="text-sm"
                 />
 
-                <div className="lg:hidden text-xs font-medium text-gray-500 mt-2 lg:mt-0">Aplicação</div>
-                <Input
-                  placeholder="Aplicação"
-                  value={p.aplicacao}
-                  onChange={e => updateProductField(p.id, 'aplicacao', e.target.value)}
-                  className="text-sm"
-                />
-
                 <div className="lg:hidden text-xs font-medium text-gray-500 mt-2 lg:mt-0">Quantidade</div>
                 <Input
-                  type="number"
-                  placeholder="Qtd"
+                  type="text"
+                  placeholder="Qtd (aceita vírgulas)"
                   value={p.quantidade}
                   onChange={e => updateProductField(p.id, 'quantidade', e.target.value)}
                   className="text-sm"
@@ -570,9 +614,8 @@ const ProcessorPage = () => {
 
                 <div className="lg:hidden text-xs font-medium text-gray-500 mt-2 lg:mt-0">Valor FOB (USD)</div>
                 <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
+                  type="text"
+                  placeholder="0,00 ou 0.00"
                   value={p.valorFOB}
                   onChange={e => updateProductField(p.id, 'valorFOB', e.target.value)}
                   className="text-sm"
