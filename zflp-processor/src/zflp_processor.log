@@ -1,0 +1,137 @@
+2025-06-05 00:29:46,105 - __main__ - INFO - Imports realizados com sucesso
+2025-06-05 00:29:46,135 - __main__ - INFO - Base de dados carregada: 376 produtos
+2025-06-05 00:29:46,135 - __main__ - INFO - Processador robusto carregado com sucesso
+2025-06-05 00:29:46,137 - __main__ - INFO - Blueprint registrado com sucesso
+2025-06-05 00:29:46,137 - __main__ - INFO - Aplicação Flask criada com sucesso
+2025-06-05 00:29:46,155 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.4.29:5001
+2025-06-05 00:29:46,155 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-06-05 00:30:12,313 - __main__ - INFO - Request: GET http://localhost:5001/
+2025-06-05 00:30:12,315 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:30:12] "GET / HTTP/1.1" 200 -
+2025-06-05 00:30:21,060 - __main__ - INFO - Request: GET http://localhost:5001/health
+2025-06-05 00:30:21,060 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:30:21] "GET /health HTTP/1.1" 200 -
+2025-06-05 00:33:28,879 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 00:33:28,881 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:33:28] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 00:33:34,331 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 00:33:34,332 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:33:34] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 00:40:44,293 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 00:40:44,294 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:40:44] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 00:44:32,396 - __main__ - INFO - Imports realizados com sucesso
+2025-06-05 00:44:32,441 - __main__ - INFO - Base de dados carregada: 376 produtos
+2025-06-05 00:44:32,441 - __main__ - INFO - Processador robusto carregado com sucesso
+2025-06-05 00:44:32,442 - __main__ - INFO - Blueprint registrado com sucesso
+2025-06-05 00:44:32,443 - __main__ - INFO - Aplicação Flask criada com sucesso
+2025-06-05 00:44:32,463 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.4.29:5001
+2025-06-05 00:44:32,463 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-06-05 00:44:48,726 - __main__ - INFO - Request: POST http://localhost:5001/api/upload
+2025-06-05 00:44:48,727 - routes.upload - INFO - [2025-06-05 00:44:48.727398] upload_file - Data: None
+2025-06-05 00:44:48,729 - routes.upload - INFO - Salvando arquivo em: /var/folders/cf/yfh3d6gs371byvlwvzzzj2bm0000gn/T/zflp_upload__a9_tlxt/TESTE_PARA_APP_MANUS.xlsx
+2025-06-05 00:44:48,729 - routes.upload - INFO - Iniciando processamento robusto do arquivo
+2025-06-05 00:44:48,729 - services.excel_processor_robust - INFO - Iniciando processamento de: /var/folders/cf/yfh3d6gs371byvlwvzzzj2bm0000gn/T/zflp_upload__a9_tlxt/TESTE_PARA_APP_MANUS.xlsx
+2025-06-05 00:44:48,729 - services.excel_processor_robust - INFO - Tentando ler com configuração: {'engine': 'openpyxl', 'sheet_name': 0}
+2025-06-05 00:44:48,737 - services.excel_processor_robust - INFO - Arquivo lido com sucesso. Shape: (4, 4)
+2025-06-05 00:44:48,737 - services.excel_processor_robust - INFO - Limpando DataFrame. Shape inicial: (4, 4)
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - DataFrame limpo. Shape final: (4, 4)
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - Detectando colunas em: ['item', 'marca', 'quantidade', 'valor']
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - Coluna 'produto' mapeada para 'item' (score: 10)
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - Coluna 'marca' mapeada para 'marca' (score: 10)
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - Coluna 'quantidade' mapeada para 'quantidade' (score: 20)
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - Coluna 'valor' mapeada para 'valor' (score: 10)
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - Mapeamento final: {'produto': 'item', 'marca': 'marca', 'quantidade': 'quantidade', 'valor': 'valor'}
+2025-06-05 00:44:48,738 - services.excel_processor_robust - INFO - Processamento concluído. 4 produtos válidos de 4 linhas
+2025-06-05 00:44:48,739 - routes.upload - INFO - Arquivo temporário removido com sucesso
+2025-06-05 00:44:48,739 - routes.upload - INFO - Sucesso: Arquivo processado com sucesso! 4 produtos encontrados.
+2025-06-05 00:44:48,739 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:44:48] "POST /api/upload HTTP/1.1" 200 -
+2025-06-05 00:46:02,851 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 00:46:02,852 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:46:02] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 00:46:09,121 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 00:46:09,122 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:46:09] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 00:58:53,185 - __main__ - INFO - Imports realizados com sucesso
+2025-06-05 00:58:53,215 - __main__ - INFO - Base de dados carregada: 376 produtos
+2025-06-05 00:58:53,215 - __main__ - INFO - Processador robusto carregado com sucesso
+2025-06-05 00:58:53,217 - __main__ - INFO - Blueprint registrado com sucesso
+2025-06-05 00:58:53,217 - __main__ - INFO - Aplicação Flask criada com sucesso
+2025-06-05 00:58:53,235 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.4.29:5001
+2025-06-05 00:58:53,235 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-06-05 00:59:09,591 - __main__ - INFO - Request: POST http://localhost:5001/api/upload
+2025-06-05 00:59:09,592 - routes.upload - INFO - [2025-06-05 00:59:09.592203] upload_file - Data: None
+2025-06-05 00:59:09,594 - routes.upload - INFO - Salvando arquivo em: /var/folders/cf/yfh3d6gs371byvlwvzzzj2bm0000gn/T/zflp_upload_fam0_t2l/TESTE_PARA_APP_MANUS.xlsx
+2025-06-05 00:59:09,595 - routes.upload - INFO - Iniciando processamento robusto do arquivo
+2025-06-05 00:59:09,595 - services.excel_processor_robust - INFO - Iniciando processamento de: /var/folders/cf/yfh3d6gs371byvlwvzzzj2bm0000gn/T/zflp_upload_fam0_t2l/TESTE_PARA_APP_MANUS.xlsx
+2025-06-05 00:59:09,595 - services.excel_processor_robust - INFO - Tentando ler com configuração: {'engine': 'openpyxl', 'sheet_name': 0}
+2025-06-05 00:59:09,605 - services.excel_processor_robust - INFO - Arquivo lido com sucesso. Shape: (4, 4)
+2025-06-05 00:59:09,605 - services.excel_processor_robust - INFO - Limpando DataFrame. Shape inicial: (4, 4)
+2025-06-05 00:59:09,606 - services.excel_processor_robust - INFO - DataFrame limpo. Shape final: (4, 4)
+2025-06-05 00:59:09,606 - services.excel_processor_robust - INFO - Detectando colunas em: ['item', 'marca', 'quantidade', 'valor']
+2025-06-05 00:59:09,607 - services.excel_processor_robust - INFO - Coluna 'produto' mapeada para 'item' (score: 10)
+2025-06-05 00:59:09,607 - services.excel_processor_robust - INFO - Coluna 'marca' mapeada para 'marca' (score: 10)
+2025-06-05 00:59:09,607 - services.excel_processor_robust - INFO - Coluna 'quantidade' mapeada para 'quantidade' (score: 20)
+2025-06-05 00:59:09,608 - services.excel_processor_robust - INFO - Coluna 'valor' mapeada para 'valor' (score: 10)
+2025-06-05 00:59:09,608 - services.excel_processor_robust - INFO - Mapeamento final: {'produto': 'item', 'marca': 'marca', 'quantidade': 'quantidade', 'valor': 'valor'}
+2025-06-05 00:59:09,609 - services.excel_processor_robust - INFO - Processamento concluído. 4 produtos válidos de 4 linhas
+2025-06-05 00:59:09,609 - routes.upload - INFO - Arquivo temporário removido com sucesso
+2025-06-05 00:59:09,609 - routes.upload - INFO - Sucesso: Arquivo processado com sucesso! 4 produtos encontrados.
+2025-06-05 00:59:09,609 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 00:59:09] "POST /api/upload HTTP/1.1" 200 -
+2025-06-05 01:00:03,617 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 01:00:03,619 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 01:00:03] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 12:46:49,520 - __main__ - INFO - Imports realizados com sucesso
+2025-06-05 12:46:49,569 - __main__ - INFO - Base de dados carregada: 376 produtos
+2025-06-05 12:46:49,569 - __main__ - INFO - Processador robusto carregado com sucesso
+2025-06-05 12:46:49,570 - __main__ - INFO - Blueprint registrado com sucesso
+2025-06-05 12:46:49,570 - __main__ - INFO - Aplicação Flask criada com sucesso
+2025-06-05 12:46:49,594 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.4.29:5001
+2025-06-05 12:46:49,594 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-06-05 12:47:47,459 - __main__ - INFO - Request: POST http://localhost:5001/api/upload
+2025-06-05 12:47:47,460 - routes.upload - INFO - [2025-06-05 12:47:47.460281] upload_file - Data: None
+2025-06-05 12:47:47,462 - routes.upload - INFO - Salvando arquivo em: /var/folders/cf/yfh3d6gs371byvlwvzzzj2bm0000gn/T/zflp_upload_ceqry098/TESTE_PARA_APP_MANUS.xlsx
+2025-06-05 12:47:47,463 - routes.upload - INFO - Iniciando processamento robusto do arquivo
+2025-06-05 12:47:47,463 - services.excel_processor_robust - INFO - Iniciando processamento de: /var/folders/cf/yfh3d6gs371byvlwvzzzj2bm0000gn/T/zflp_upload_ceqry098/TESTE_PARA_APP_MANUS.xlsx
+2025-06-05 12:47:47,463 - services.excel_processor_robust - INFO - Tentando ler com configuração: {'engine': 'openpyxl', 'sheet_name': 0}
+2025-06-05 12:47:47,473 - services.excel_processor_robust - INFO - Arquivo lido com sucesso. Shape: (4, 4)
+2025-06-05 12:47:47,473 - services.excel_processor_robust - INFO - Limpando DataFrame. Shape inicial: (4, 4)
+2025-06-05 12:47:47,474 - services.excel_processor_robust - INFO - DataFrame limpo. Shape final: (4, 4)
+2025-06-05 12:47:47,474 - services.excel_processor_robust - INFO - Detectando colunas em: ['item', 'marca', 'quantidade', 'valor']
+2025-06-05 12:47:47,474 - services.excel_processor_robust - INFO - Coluna 'produto' mapeada para 'item' (score: 10)
+2025-06-05 12:47:47,475 - services.excel_processor_robust - INFO - Coluna 'marca' mapeada para 'marca' (score: 10)
+2025-06-05 12:47:47,475 - services.excel_processor_robust - INFO - Coluna 'quantidade' mapeada para 'quantidade' (score: 20)
+2025-06-05 12:47:47,475 - services.excel_processor_robust - INFO - Coluna 'valor' mapeada para 'valor' (score: 10)
+2025-06-05 12:47:47,475 - services.excel_processor_robust - INFO - Mapeamento final: {'produto': 'item', 'marca': 'marca', 'quantidade': 'quantidade', 'valor': 'valor'}
+2025-06-05 12:47:47,476 - services.excel_processor_robust - INFO - Processamento concluído. 4 produtos válidos de 4 linhas
+2025-06-05 12:47:47,476 - routes.upload - INFO - Arquivo temporário removido com sucesso
+2025-06-05 12:47:47,476 - routes.upload - INFO - Sucesso: Arquivo processado com sucesso! 4 produtos encontrados.
+2025-06-05 12:47:47,476 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 12:47:47] "POST /api/upload HTTP/1.1" 200 -
+2025-06-05 12:52:24,568 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 12:52:24,570 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 12:52:24] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 12:52:40,781 - __main__ - INFO - Request: OPTIONS http://localhost:5001/api/calculate-costs
+2025-06-05 12:52:40,783 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 12:52:40] "OPTIONS /api/calculate-costs HTTP/1.1" 200 -
+2025-06-05 13:14:23,546 - __main__ - INFO - Request: GET http://localhost:5001/
+2025-06-05 13:14:23,547 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 13:14:23] "GET / HTTP/1.1" 200 -
+2025-06-05 13:14:23,563 - __main__ - INFO - Request: GET http://localhost:5001/apple-touch-icon-precomposed.png
+2025-06-05 13:14:23,563 - __main__ - WARNING - 404 - Endpoint não encontrado: http://localhost:5001/apple-touch-icon-precomposed.png
+2025-06-05 13:14:23,564 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 13:14:23] "[33mGET /apple-touch-icon-precomposed.png HTTP/1.1[0m" 404 -
+2025-06-05 13:14:23,608 - __main__ - INFO - Request: GET http://localhost:5001/apple-touch-icon.png
+2025-06-05 13:14:23,608 - __main__ - WARNING - 404 - Endpoint não encontrado: http://localhost:5001/apple-touch-icon.png
+2025-06-05 13:14:23,609 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 13:14:23] "[33mGET /apple-touch-icon.png HTTP/1.1[0m" 404 -
+2025-06-05 13:14:43,612 - __main__ - INFO - Request: GET http://localhost:5001/api/calculate-costs
+2025-06-05 13:14:43,612 - __main__ - WARNING - 405 - Método não permitido: GET http://localhost:5001/api/calculate-costs
+2025-06-05 13:14:43,613 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 13:14:43] "[31m[1mGET /api/calculate-costs HTTP/1.1[0m" 405 -
+2025-06-05 13:15:18,854 - __main__ - INFO - Request: GET http://localhost:5001/apple-touch-icon-precomposed.png
+2025-06-05 13:15:18,855 - __main__ - INFO - Request: GET http://localhost:5001/apple-touch-icon.png
+2025-06-05 13:15:18,855 - __main__ - WARNING - 404 - Endpoint não encontrado: http://localhost:5001/apple-touch-icon-precomposed.png
+2025-06-05 13:15:18,856 - __main__ - WARNING - 404 - Endpoint não encontrado: http://localhost:5001/apple-touch-icon.png
+2025-06-05 13:15:18,856 - __main__ - INFO - Request: GET http://localhost:5001/favicon.ico
+2025-06-05 13:15:18,857 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 13:15:18] "[33mGET /apple-touch-icon-precomposed.png HTTP/1.1[0m" 404 -
+2025-06-05 13:15:18,857 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 13:15:18] "[33mGET /apple-touch-icon.png HTTP/1.1[0m" 404 -
+2025-06-05 13:15:18,858 - __main__ - WARNING - 404 - Endpoint não encontrado: http://localhost:5001/favicon.ico
+2025-06-05 13:15:18,858 - werkzeug - INFO - 127.0.0.1 - - [05/Jun/2025 13:15:18] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
